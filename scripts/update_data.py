@@ -12,6 +12,7 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
@@ -381,6 +382,28 @@ def fetch_kr_technicals(code):
     }
 
 
+def fetch_yahoo_index_level(ticker, days_back=15):
+    """Level/change/changePct for an index via Yahoo Finance (e.g. '^KS11', '^KQ11')."""
+    encoded = urllib.parse.quote(ticker, safe="")
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}?range={days_back}d&interval=1d"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    result = (d.get("chart") or {}).get("result")
+    if not result:
+        return None
+    closes_raw = result[0]["indicators"]["quote"][0]["close"]
+    closes = [c for c in closes_raw if c is not None]
+    if len(closes) < 2:
+        return None
+    last, prev = closes[-1], closes[-2]
+    return {
+        "level": round(last, 2),
+        "change": round(last - prev, 2),
+        "changePct": round((last - prev) / prev * 100, 2),
+    }
+
+
 def update_kr_stocks(existing_kr_stocks, target_count=50):
     log(f"Fetching KOSPI market-cap ranking from Naver Finance (top {target_count})...")
     kr_by_code = {s["code"]: s for s in existing_kr_stocks}
@@ -469,6 +492,20 @@ def main():
     log(index_note)
     log("DJIA/SPX/VIX left unchanged (not authorized on current Massive/Polygon.io plan).")
 
+    kr_index_note = ""
+    for code, name, ticker in (("KOSPI", "코스피", "^KS11"), ("KOSDAQ", "코스닥", "^KQ11")):
+        try:
+            r = fetch_yahoo_index_level(ticker)
+            if r:
+                prev_doc = indices_by_code.get(code, {})
+                indices_by_code[code] = {**prev_doc, "code": code, "name": name, **r}
+                kr_index_note += f"{code} updated. "
+            else:
+                kr_index_note += f"{code} fetch returned no data. "
+        except Exception as e:
+            kr_index_note += f"{code} update failed: {e}. "
+    log(kr_index_note)
+
     log("Fetching crypto market data from CoinGecko...")
     crypto_by_symbol = {c["symbol"]: c for c in data["crypto"]}
     crypto_note = ""
@@ -536,7 +573,7 @@ def main():
         + (f" (failed: {', '.join(stock_failed)})" if stock_failed else "") + ". "
         f"ETFs: {len(etf_results)}/{len(etf_symbols)} updated"
         + (f" (failed: {', '.join(etf_failed)})" if etf_failed else "") + ". "
-        f"{index_note}. {crypto_note}. {kr_note}. {constituent_note}"
+        f"{index_note}. {kr_index_note}{crypto_note}. {kr_note}. {constituent_note}"
     )
 
     data["stocks"] = list(stocks_by_symbol.values())
