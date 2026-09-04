@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S&P 500 Directory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #f6f7fa;
+    --surface: #ffffff;
+    --surface-alt: #eef1f6;
+    --border: #dde2e9;
+    --text: #12161f;
+    --text-muted: #5b6472;
+    --accent: #2f5de0;
+    --accent-soft: #e7ecfc;
+    --accent-text: #1c3aa3;
+    --up: #1f9d55;
+    --down: #d6455a;
+    --shadow: 0 1px 2px rgba(18,22,31,0.04), 0 8px 24px -12px rgba(18,22,31,0.10);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0e14;
+      --surface: #121722;
+      --surface-alt: #1a2130;
+      --border: #262e3d;
+      --text: #e7eaf0;
+      --text-muted: #98a2b3;
+      --accent: #7b95ff;
+      --accent-soft: #1e2a4d;
+      --accent-text: #b7c3ff;
+      --up: #3fbd76;
+      --down: #ea6b7d;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0e14;
+    --surface: #121722;
+    --surface-alt: #1a2130;
+    --border: #262e3d;
+    --text: #e7eaf0;
+    --text-muted: #98a2b3;
+    --accent: #7b95ff;
+    --accent-soft: #1e2a4d;
+    --accent-text: #b7c3ff;
+    --up: #3fbd76;
+    --down: #ea6b7d;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', -apple-system, 'Noto Sans KR', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-main {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: 'Newsreader', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(30px, 4.4vw, 44px);
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    max-width: 62ch;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .last-updated {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .stats {
+    display: flex;
+    gap: 28px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .theme-toggle {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--accent); }
+  .theme-toggle svg { width: 18px; height: 18px; }
+  .theme-toggle .icon-sun { display: none; }
+  .theme-toggle .icon-moon { display: block; }
+  :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+  :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
+    :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  #search {
+    width: 100%;
+    max-width: 420px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    box-shadow: var(--shadow);
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--text-muted); }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    --hue: 210;
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  }
+  .chip::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: hsl(var(--hue) 55% 55%);
+    margin-right: 7px;
+    vertical-align: middle;
+  }
+  .chip.active {
+    background: hsl(var(--hue) 40% 92%);
+    border-color: hsl(var(--hue) 40% 70%);
+    color: hsl(var(--hue) 55% 28%);
+  }
+  :root:not([data-theme="light"]) .chip.active {
+    background: hsl(var(--hue) 32% 22%);
+    border-color: hsl(var(--hue) 32% 38%);
+    color: hsl(var(--hue) 60% 84%);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .chip.active {
+      background: hsl(var(--hue) 40% 92%);
+      border-color: hsl(var(--hue) 40% 70%);
+      color: hsl(var(--hue) 55% 28%);
+    }
+  }
+  .chip.clear { color: var(--text-muted); font-style: italic; }
+
+  .signal-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .signal-toggle input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    overflow: auto;
+    max-height: 70vh;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface-alt);
+    text-align: left;
+    padding: 11px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    user-select: none;
+  }
+  thead th[data-key] { cursor: pointer; }
+  thead th[data-key]:hover { color: var(--text); }
+  thead th .arrow { opacity: 0; margin-left: 4px; }
+  thead th.sorted .arrow { opacity: 1; color: var(--accent); }
+  thead th.num { text-align: right; }
+
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: var(--surface-alt); }
+  tbody tr:last-child { border-bottom: none; }
+
+  td { padding: 9px 14px; vertical-align: middle; white-space: nowrap; }
+  td.name { white-space: normal; min-width: 180px; }
+  td.sub { white-space: normal; color: var(--text-muted); min-width: 180px; }
+  td.num { text-align: right; }
+  td.divergence { white-space: normal; min-width: 150px; }
+
+  .ticker-link {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--accent-text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .ticker-link:hover { border-bottom-color: var(--accent); }
+
+  .sector-tag {
+    --hue: 210;
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: hsl(var(--hue) 40% 93%);
+    color: hsl(var(--hue) 55% 30%);
+    white-space: nowrap;
+  }
+  :root:not([data-theme="light"]) .sector-tag {
+    background: hsl(var(--hue) 30% 22%);
+    color: hsl(var(--hue) 55% 82%);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .sector-tag {
+      background: hsl(var(--hue) 40% 93%);
+      color: hsl(var(--hue) 55% 30%);
+    }
+  }
+
+  .mono-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+  .mcap-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 13px;
+  }
+  .na { color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+  .price-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 13px;
+  }
+  .chg-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 12.5px;
+  }
+  .chg-up { color: var(--up); }
+  .chg-down { color: var(--down); }
+
+  .rsi-cell { display: inline-flex; align-items: center; gap: 6px; }
+  .rsi-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  .rsi-badge {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .rsi-badge.over { background: hsl(353 65% 92%); color: hsl(353 60% 38%); }
+  .rsi-badge.under { background: hsl(145 45% 90%); color: hsl(145 55% 26%); }
+  :root:not([data-theme="light"]) .rsi-badge.over { background: hsl(353 40% 24%); color: hsl(353 70% 82%); }
+  :root:not([data-theme="light"]) .rsi-badge.under { background: hsl(145 35% 20%); color: hsl(145 55% 78%); }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .rsi-badge.over { background: hsl(353 65% 92%); color: hsl(353 60% 38%); }
+    :root:not([data-theme="dark"]) .rsi-badge.under { background: hsl(145 45% 90%); color: hsl(145 55% 26%); }
+  }
+
+  .div-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+  .div-badge {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .div-badge.bear { background: var(--down); color: #fff; }
+  .div-badge.bull { background: var(--up); color: #fff; }
+  .div-badge.hidden-bear { background: transparent; color: var(--down); border: 1px solid var(--down); }
+  .div-badge.hidden-bull { background: transparent; color: var(--up); border: 1px solid var(--up); }
+
+  .empty-row td { text-align: center; color: var(--text-muted); padding: 32px; font-style: italic; }
+
+  .category-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    appearance: none;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 16px;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    transition: color 0.12s ease, background 0.12s ease;
+    position: relative;
+    top: 1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--accent-text);
+    background: var(--surface);
+    border-color: var(--border);
+    border-bottom: 1px solid var(--surface);
+  }
+
+  .tab-panel[hidden] { display: none; }
+  .tab-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .index-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .index-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .index-card-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .index-card-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+  .index-card-level {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .index-card-chg {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .placeholder-panel {
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    padding: 56px 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .placeholder-panel .ph-emoji { font-size: 28px; display: block; margin-bottom: 10px; }
+
+  footer {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  a { color: inherit; }
+  ::selection { background: var(--accent-soft); }
+
+  @media (max-width: 640px) {
+    .hero { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="hero">
+    <div class="hero-main">
+      <p class="eyebrow">Market Reference &middot; Indices &middot; Stocks &middot; ETF &middot; Crypto</p>
+      <h1>US Markets Directory</h1>
+      <p class="sub">미국 3대 지수, S&amp;P 500 개별종목, 미국 ETF, 암호화폐를 한 곳에서 확인하세요. S&amp;P 500 종목은 검색·정렬이 가능하고 티커를 누르면 트레이딩뷰 차트로 바로 이동합니다. 일봉 기준 RSI(14)와 다이버전스(일반/히든) 신호는 시가총액 상위 종목부터 순차적으로 반영 중입니다.</p>
+      <p class="last-updated" id="lastUpdated">데이터 불러오는 중...</p>
+      <div class="stats">
+        <div class="stat"><span class="stat-num" id="statTotal">503</span><span class="stat-label">전체 종목</span></div>
+        <div class="stat"><span class="stat-num" id="statSectors">11</span><span class="stat-label">GICS 섹터</span></div>
+        <div class="stat"><span class="stat-num" id="statShown">503</span><span class="stat-label">현재 표시</span></div>
+      </div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="다크모드 전환" title="다크모드 전환">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+  </header>
+
+  <nav class="category-tabs" id="categoryTabs">
+    <button class="tab-btn active" type="button" data-tab="indices">지수</button>
+    <button class="tab-btn" type="button" data-tab="stocks">개별종목 (S&amp;P 500)</button>
+    <button class="tab-btn" type="button" data-tab="etf">미국 ETF</button>
+    <button class="tab-btn" type="button" data-tab="crypto">암호화폐</button>
+  </nav>
+
+  <section class="tab-panel" id="panel-indices" data-panel="indices">
+    <div class="index-cards" id="indexCards"></div>
+  </section>
+
+  <section class="tab-panel" id="panel-stocks" data-panel="stocks" hidden>
+    <div class="controls">
+      <input id="search" type="search" placeholder="티커 또는 회사명 검색 (예: AAPL, Apple)" autocomplete="off" />
+      <div class="chips" id="sectorChips"></div>
+      <label class="signal-toggle">
+        <input type="checkbox" id="signalOnly" />
+        과매수·과매도·다이버전스 신호가 있는 종목만 보기
+      </label>
+    </div>
+
+    <div class="table-wrap">
+      <table id="table">
+        <thead>
+          <tr>
+            <th data-key="symbol" data-type="str">티커<span class="arrow">▲</span></th>
+            <th data-key="name" data-type="str">회사명<span class="arrow">▲</span></th>
+            <th data-key="price" data-type="num" class="num">현재가<span class="arrow">▲</span></th>
+            <th data-key="changePct" data-type="num" class="num">전일대비<span class="arrow">▲</span></th>
+            <th data-key="rsi" data-type="num" class="num">RSI(14)<span class="arrow">▲</span></th>
+            <th data-key="divergenceLabel" data-type="str">다이버전스<span class="arrow">▲</span></th>
+            <th data-key="marketCap" data-type="num" class="num">시가총액<span class="arrow">▲</span></th>
+            <th data-key="sector" data-type="str">섹터<span class="arrow">▲</span></th>
+            <th data-key="subIndustry" data-type="str">세부 산업<span class="arrow">▲</span></th>
+            <th data-key="added" data-type="str">지수 편입일<span class="arrow">▲</span></th>
+            <th data-key="foundedYear" data-type="num" class="num">설립<span class="arrow">▲</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="panel-etf" data-panel="etf" hidden>
+    <div class="table-wrap">
+      <table id="etfTable">
+        <thead>
+          <tr>
+            <th>티커</th>
+            <th>이름</th>
+            <th class="num">현재가</th>
+            <th class="num">전일대비</th>
+          </tr>
+        </thead>
+        <tbody id="etfTbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="panel-crypto" data-panel="crypto" hidden>
+    <div class="table-wrap">
+      <table id="cryptoTable">
+        <thead>
+          <tr>
+            <th class="num">순위</th>
+            <th>심볼</th>
+            <th data-key="name" data-type="str">이름<span class="arrow">▲</span></th>
+            <th class="num">현재가</th>
+            <th class="num">24시간 변동률</th>
+            <th data-key="marketCap" data-type="num" class="num">시가총액<span class="arrow">▲</span></th>
+            <th class="num">RSI(14)</th>
+            <th>다이버전스</th>
+          </tr>
+        </thead>
+        <tbody id="cryptoTbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    데이터 출처: 미국 3대 지수(다우존스·S&amp;P 500·나스닥 종합)·VIX는 Google Finance, 종목 목록·섹터는 Wikipedia "List of S&amp;P 500 companies", 시가총액은 SlickCharts, 주가·RSI·다이버전스는 Massive(구 Polygon.io) 일봉 데이터, 미국 ETF 시세는 StockAnalysis.com, 암호화폐 시세·시가총액은 CoinGecko (모두 정리 기준일 2026-08-31). 503개 종목 중 499개는 시가총액 데이터를 확인했고, 나머지 4개는 신뢰할 수 있는 값을 확보하지 못해 &ldquo;데이터 없음&rdquo;으로 표시했습니다. 현재가·RSI(14)·다이버전스는 시가총액 상위 100개 종목에 우선 반영되어 있으며(RSI 배지는 70 이상 과매수·30 이하 과매도, 다이버전스는 비교하는 두 지점의 RSI가 모두 65 이상 또는 35 이하일 때만 표시, 신호 보유 12개), 나머지 종목은 순차적으로 추가될 예정입니다. 미국 ETF는 시가총액·거래량 기준 대표 종목 15개를 선별해 반영했습니다. 암호화폐는 시가총액 상위 100개 코인의 현재가·24시간 변동률·시가총액을 표시하며, RSI(14)·다이버전스는 그중 상위 20개 코인(스테이블코인 제외)에 한해 계산했습니다(20개 반영). 지수 구성 종목·시가총액·주가는 리밸런싱과 시세 변동에 따라 실제와 다를 수 있습니다. 티커 클릭 시 트레이딩뷰 종목 검색 페이지로 이동합니다.
+  </footer>
+</div>
+
+<script>
+  let DATA = [];
+  const SECTOR_HUES = {"Information Technology": 214, "Financials": 246, "Industrials": 271, "Real Estate": 300, "Consumer Discretionary": 326, "Energy": 20, "Consumer Staples": 42, "Materials": 66, "Health Care": 168, "Communication Services": 192, "Utilities": 150};
+  const SECTORS = ["Communication Services", "Consumer Discretionary", "Consumer Staples", "Energy", "Financials", "Health Care", "Industrials", "Information Technology", "Materials", "Real Estate", "Utilities"];
+  let INDEX_DATA = [];
+  let ETF_DATA = [];
+  let CRYPTO_DATA = [];
+
+  const state = {
+    query: '',
+    sectors: new Set(),
+    sortKey: 'marketCap',
+    sortDir: -1,
+    signalOnly: false,
+  };
+
+  const cryptoState = {
+    sortKey: 'marketCap',
+    sortDir: -1,
+  };
+
+  const tbody = document.getElementById('tbody');
+  const chipsEl = document.getElementById('sectorChips');
+  const statShown = document.getElementById('statShown');
+  const searchEl = document.getElementById('search');
+  const themeToggle = document.getElementById('themeToggle');
+  const signalOnlyEl = document.getElementById('signalOnly');
+
+  // ---- theme ----
+  function getEffectiveTheme() {
+    const explicit = document.documentElement.getAttribute('data-theme');
+    if (explicit === 'dark' || explicit === 'light') return explicit;
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('sp500-directory-theme', t); } catch (e) {}
+  }
+  (function initTheme() {
+    let stored = null;
+    try { stored = localStorage.getItem('sp500-directory-theme'); } catch (e) {}
+    if (stored === 'dark' || stored === 'light') {
+      document.documentElement.setAttribute('data-theme', stored);
+    }
+  })();
+  themeToggle.addEventListener('click', () => {
+    applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+  });
+
+  // ---- formatting ----
+  function formatMarketCap(v) {
+    if (v === null || v === undefined) return null;
+    if (v >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+    if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+    return '$' + v.toFixed(0);
+  }
+
+  function tradingViewUrl(symbol) {
+    const clean = symbol.replace('.', '-').replace(/[^A-Za-z0-9-]/g, '');
+    return 'https://www.tradingview.com/symbols/' + encodeURIComponent(clean) + '/';
+  }
+
+  function formatPrice(v) {
+    if (v === null || v === undefined) return null;
+    return '$' + v.toFixed(2);
+  }
+
+  function formatChangePct(v) {
+    if (v === null || v === undefined) return null;
+    const sign = v > 0 ? '+' : '';
+    return sign + v.toFixed(2) + '%';
+  }
+
+  const DIV_BADGES = [
+    { key: 'regularBearish', label: '일반 약세', cls: 'bear' },
+    { key: 'regularBullish', label: '일반 강세', cls: 'bull' },
+    { key: 'hiddenBearish', label: '히든 약세', cls: 'hidden-bear' },
+    { key: 'hiddenBullish', label: '히든 강세', cls: 'hidden-bull' },
+  ];
+
+  // ---- category tabs ----
+  function initTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        tabBtns.forEach((b) => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.tab-panel').forEach((panel) => {
+          panel.hidden = panel.dataset.panel !== target;
+        });
+      });
+    });
+  }
+
+  // ---- indices ----
+  function formatIndexLevel(v) {
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function renderIndexCards() {
+    const container = document.getElementById('indexCards');
+    const frag = document.createDocumentFragment();
+    INDEX_DATA.forEach((idx) => {
+      const card = document.createElement('div');
+      card.className = 'index-card';
+
+      const name = document.createElement('div');
+      name.className = 'index-card-name';
+      name.textContent = idx.name;
+      card.appendChild(name);
+
+      const code = document.createElement('div');
+      code.className = 'index-card-code';
+      code.textContent = idx.code;
+      card.appendChild(code);
+
+      const level = document.createElement('div');
+      level.className = 'index-card-level';
+      level.textContent = formatIndexLevel(idx.level);
+      card.appendChild(level);
+
+      const chg = document.createElement('div');
+      const sign = idx.change > 0 ? '+' : '';
+      chg.className = 'index-card-chg ' + (idx.change > 0 ? 'chg-up' : idx.change < 0 ? 'chg-down' : '');
+      chg.textContent = sign + idx.change.toFixed(2) + ' (' + sign + idx.changePct.toFixed(2) + '%)';
+      card.appendChild(chg);
+
+      frag.appendChild(card);
+    });
+    container.innerHTML = '';
+    container.appendChild(frag);
+  }
+
+  // ---- ETF ----
+  function renderETF() {
+    const tbody = document.getElementById('etfTbody');
+    const frag = document.createDocumentFragment();
+    ETF_DATA.forEach((d) => {
+      const tr = document.createElement('tr');
+
+      const tdTicker = document.createElement('td');
+      const a = document.createElement('a');
+      a.className = 'ticker-link';
+      a.href = tradingViewUrl(d.symbol);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = d.symbol;
+      tdTicker.appendChild(a);
+
+      const tdName = document.createElement('td');
+      tdName.className = 'name';
+      tdName.textContent = d.name;
+
+      const tdPrice = document.createElement('td');
+      tdPrice.className = 'num';
+      const priceSpan = document.createElement('span');
+      priceSpan.className = 'price-num';
+      priceSpan.textContent = formatPrice(d.price);
+      tdPrice.appendChild(priceSpan);
+
+      const tdChg = document.createElement('td');
+      tdChg.className = 'num';
+      const chgSpan = document.createElement('span');
+      chgSpan.className = 'chg-num ' + (d.changePct > 0 ? 'chg-up' : d.changePct < 0 ? 'chg-down' : '');
+      chgSpan.textContent = formatChangePct(d.changePct);
+      tdChg.appendChild(chgSpan);
+
+      tr.appendChild(tdTicker);
+      tr.appendChild(tdName);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdChg);
+      frag.appendChild(tr);
+    });
+    tbody.innerHTML = '';
+    tbody.appendChild(frag);
+  }
+
+  // ---- Crypto ----
+  function formatCryptoPrice(v) {
+    if (v === null || v === undefined) return null;
+    if (v >= 1) return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (v >= 0.01) return '$' + v.toFixed(4);
+    return '$' + v.toFixed(6);
+  }
+  function tradingViewCryptoUrl(symbol) {
+    return 'https://www.tradingview.com/symbols/' + encodeURIComponent(symbol) + 'USD/';
+  }
+  function applyCryptoSort() {
+    const key = cryptoState.sortKey;
+    const dir = cryptoState.sortDir;
+    const isNum = key === 'marketCap';
+    return CRYPTO_DATA.slice().sort((a, b) => {
+      if (isNum) return (a[key] - b[key]) * dir;
+      return a[key].localeCompare(b[key]) * dir;
+    });
+  }
+  function renderCrypto() {
+    const tbody = document.getElementById('cryptoTbody');
+    const frag = document.createDocumentFragment();
+    applyCryptoSort().forEach((d) => {
+      const tr = document.createElement('tr');
+
+      const tdRank = document.createElement('td');
+      tdRank.className = 'num';
+      const rankSpan = document.createElement('span');
+      rankSpan.className = 'mono-num';
+      rankSpan.textContent = d.rank;
+      tdRank.appendChild(rankSpan);
+
+      const tdSymbol = document.createElement('td');
+      const a = document.createElement('a');
+      a.className = 'ticker-link';
+      a.href = tradingViewCryptoUrl(d.symbol);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = d.symbol;
+      tdSymbol.appendChild(a);
+
+      const tdName = document.createElement('td');
+      tdName.className = 'name';
+      tdName.textContent = d.name;
+
+      const tdPrice = document.createElement('td');
+      tdPrice.className = 'num';
+      const priceSpan = document.createElement('span');
+      priceSpan.className = 'price-num';
+      priceSpan.textContent = formatCryptoPrice(d.price);
+      tdPrice.appendChild(priceSpan);
+
+      const tdChg = document.createElement('td');
+      tdChg.className = 'num';
+      const chgSpan = document.createElement('span');
+      chgSpan.className = 'chg-num ' + (d.changePct > 0 ? 'chg-up' : d.changePct < 0 ? 'chg-down' : '');
+      chgSpan.textContent = formatChangePct(d.changePct);
+      tdChg.appendChild(chgSpan);
+
+      const tdCap = document.createElement('td');
+      tdCap.className = 'num';
+      const capSpan = document.createElement('span');
+      capSpan.className = 'mcap-num';
+      capSpan.textContent = formatMarketCap(d.marketCap);
+      tdCap.appendChild(capSpan);
+
+      const tdRsi = document.createElement('td');
+      tdRsi.className = 'num';
+      if (d.rsi === null || d.rsi === undefined) {
+        const naSpan = document.createElement('span');
+        naSpan.className = 'na';
+        naSpan.textContent = '-';
+        tdRsi.appendChild(naSpan);
+      } else {
+        const wrap = document.createElement('span');
+        wrap.className = 'rsi-cell';
+        const valSpan = document.createElement('span');
+        valSpan.className = 'rsi-val';
+        valSpan.textContent = d.rsi.toFixed(1);
+        wrap.appendChild(valSpan);
+        if (d.rsiZone === 'overbought' || d.rsiZone === 'oversold') {
+          const badge = document.createElement('span');
+          badge.className = 'rsi-badge ' + (d.rsiZone === 'overbought' ? 'over' : 'under');
+          badge.textContent = d.rsiZone === 'overbought' ? '과매수' : '과매도';
+          wrap.appendChild(badge);
+        }
+        tdRsi.appendChild(wrap);
+      }
+
+      const tdDiv = document.createElement('td');
+      tdDiv.className = 'divergence';
+      const activeBadges = DIV_BADGES.filter((b) => d[b.key]);
+      if (activeBadges.length === 0) {
+        const naSpan = document.createElement('span');
+        naSpan.className = 'na';
+        naSpan.textContent = (d.rsi === null || d.rsi === undefined) ? '-' : '없음';
+        tdDiv.appendChild(naSpan);
+      } else {
+        const wrap = document.createElement('span');
+        wrap.className = 'div-badges';
+        activeBadges.forEach((b) => {
+          const badge = document.createElement('span');
+          badge.className = 'div-badge ' + b.cls;
+          badge.textContent = b.label;
+          wrap.appendChild(badge);
+        });
+        tdDiv.appendChild(wrap);
+      }
+
+      tr.appendChild(tdRank);
+      tr.appendChild(tdSymbol);
+      tr.appendChild(tdName);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdChg);
+      tr.appendChild(tdCap);
+      tr.appendChild(tdRsi);
+      tr.appendChild(tdDiv);
+      frag.appendChild(tr);
+    });
+    tbody.innerHTML = '';
+    tbody.appendChild(frag);
+  }
+
+  // ---- chips ----
+  function buildChips() {
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'chip clear';
+    clearBtn.type = 'button';
+    clearBtn.textContent = '전체 보기';
+    clearBtn.addEventListener('click', () => { state.sectors.clear(); render(); });
+    chipsEl.appendChild(clearBtn);
+
+    SECTORS.forEach((sector) => {
+      const hue = SECTOR_HUES[sector];
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.type = 'button';
+      btn.style.setProperty('--hue', hue);
+      btn.textContent = sector;
+      btn.dataset.sector = sector;
+      btn.addEventListener('click', () => {
+        if (state.sectors.has(sector)) state.sectors.delete(sector);
+        else state.sectors.add(sector);
+        render();
+      });
+      chipsEl.appendChild(btn);
+    });
+  }
+
+  // ---- filter + sort ----
+  function applyFilterSort() {
+    const q = state.query.trim().toLowerCase();
+    let rows = DATA.filter((d) => {
+      if (state.sectors.size > 0 && !state.sectors.has(d.sector)) return false;
+      if (state.signalOnly && !d.hasSignal) return false;
+      if (!q) return true;
+      return d.symbol.toLowerCase().includes(q) || d.name.toLowerCase().includes(q);
+    });
+    const key = state.sortKey;
+    const dir = state.sortDir;
+    const isNum = document.querySelector('#table th[data-key="' + key + '"]').dataset.type === 'num';
+
+    rows = rows.slice().sort((a, b) => {
+      const av = a[key];
+      const bv = b[key];
+      const aNull = (av === null || av === undefined);
+      const bNull = (bv === null || bv === undefined);
+      if (aNull && bNull) return a.symbol < b.symbol ? -1 : 1;
+      if (aNull) return 1;   // nulls always last, regardless of direction
+      if (bNull) return -1;
+
+      if (isNum) {
+        return (av - bv) * dir;
+      }
+      const as = av.toString();
+      const bs = bv.toString();
+      if (as < bs) return -1 * dir;
+      if (as > bs) return 1 * dir;
+      return a.symbol < b.symbol ? -1 : 1;
+    });
+    return rows;
+  }
+
+  function render() {
+    Array.from(chipsEl.querySelectorAll('.chip')).forEach((btn) => {
+      const sector = btn.dataset.sector;
+      if (!sector) { btn.classList.toggle('active', state.sectors.size === 0); return; }
+      btn.classList.toggle('active', state.sectors.has(sector));
+    });
+
+    const rows = applyFilterSort();
+    statShown.textContent = rows.length;
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="11">조건에 맞는 종목이 없습니다.</td></tr>';
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    rows.forEach((d) => {
+      const tr = document.createElement('tr');
+
+      const tdTicker = document.createElement('td');
+      const a = document.createElement('a');
+      a.className = 'ticker-link';
+      a.href = tradingViewUrl(d.symbol);
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = d.symbol;
+      tdTicker.appendChild(a);
+
+      const tdName = document.createElement('td');
+      tdName.className = 'name';
+      tdName.textContent = d.name;
+
+      const tdPrice = document.createElement('td');
+      tdPrice.className = 'num';
+      const priceText = formatPrice(d.price);
+      const priceSpan = document.createElement('span');
+      priceSpan.className = priceText === null ? 'na' : 'price-num';
+      priceSpan.textContent = priceText === null ? '-' : priceText;
+      tdPrice.appendChild(priceSpan);
+
+      const tdChg = document.createElement('td');
+      tdChg.className = 'num';
+      const chgText = formatChangePct(d.changePct);
+      const chgSpan = document.createElement('span');
+      if (chgText === null) {
+        chgSpan.className = 'na';
+        chgSpan.textContent = '-';
+      } else {
+        chgSpan.className = 'chg-num ' + (d.changePct > 0 ? 'chg-up' : d.changePct < 0 ? 'chg-down' : '');
+        chgSpan.textContent = chgText;
+      }
+      tdChg.appendChild(chgSpan);
+
+      const tdRsi = document.createElement('td');
+      tdRsi.className = 'num';
+      if (d.rsi === null || d.rsi === undefined) {
+        const naSpan = document.createElement('span');
+        naSpan.className = 'na';
+        naSpan.textContent = '-';
+        tdRsi.appendChild(naSpan);
+      } else {
+        const wrap = document.createElement('span');
+        wrap.className = 'rsi-cell';
+        const valSpan = document.createElement('span');
+        valSpan.className = 'rsi-val';
+        valSpan.textContent = d.rsi.toFixed(1);
+        wrap.appendChild(valSpan);
+        if (d.rsiZone === 'overbought' || d.rsiZone === 'oversold') {
+          const badge = document.createElement('span');
+          badge.className = 'rsi-badge ' + (d.rsiZone === 'overbought' ? 'over' : 'under');
+          badge.textContent = d.rsiZone === 'overbought' ? '과매수' : '과매도';
+          wrap.appendChild(badge);
+        }
+        tdRsi.appendChild(wrap);
+      }
+
+      const tdDiv = document.createElement('td');
+      tdDiv.className = 'divergence';
+      const activeBadges = DIV_BADGES.filter((b) => d[b.key]);
+      if (activeBadges.length === 0) {
+        const naSpan = document.createElement('span');
+        naSpan.className = 'na';
+        naSpan.textContent = (d.rsi === null || d.rsi === undefined) ? '-' : '없음';
+        tdDiv.appendChild(naSpan);
+      } else {
+        const wrap = document.createElement('span');
+        wrap.className = 'div-badges';
+        activeBadges.forEach((b) => {
+          const badge = document.createElement('span');
+          badge.className = 'div-badge ' + b.cls;
+          badge.textContent = b.label;
+          wrap.appendChild(badge);
+        });
+        tdDiv.appendChild(wrap);
+      }
+
+      const tdCap = document.createElement('td');
+      tdCap.className = 'num';
+      const capText = formatMarketCap(d.marketCap);
+      const capSpan = document.createElement('span');
+      capSpan.className = capText === null ? 'na' : 'mcap-num';
+      capSpan.textContent = capText === null ? '데이터 없음' : capText;
+      tdCap.appendChild(capSpan);
+
+      const tdSector = document.createElement('td');
+      const tag = document.createElement('span');
+      tag.className = 'sector-tag';
+      tag.style.setProperty('--hue', SECTOR_HUES[d.sector]);
+      tag.textContent = d.sector;
+      tdSector.appendChild(tag);
+
+      const tdSub = document.createElement('td');
+      tdSub.className = 'sub';
+      tdSub.textContent = d.subIndustry;
+
+      const tdAdded = document.createElement('td');
+      const addedSpan = document.createElement('span');
+      addedSpan.className = 'mono-num';
+      addedSpan.textContent = d.added;
+      tdAdded.appendChild(addedSpan);
+
+      const tdFounded = document.createElement('td');
+      tdFounded.className = 'num';
+      const foundedSpan = document.createElement('span');
+      foundedSpan.className = 'mono-num';
+      foundedSpan.textContent = d.foundedYear ? d.foundedYear : '—';
+      tdFounded.appendChild(foundedSpan);
+
+      tr.appendChild(tdTicker);
+      tr.appendChild(tdName);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdChg);
+      tr.appendChild(tdRsi);
+      tr.appendChild(tdDiv);
+      tr.appendChild(tdCap);
+      tr.appendChild(tdSector);
+      tr.appendChild(tdSub);
+      tr.appendChild(tdAdded);
+      tr.appendChild(tdFounded);
+      frag.appendChild(tr);
+    });
+    tbody.innerHTML = '';
+    tbody.appendChild(frag);
+  }
+
+  document.querySelectorAll('#table thead th').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (state.sortKey === key) {
+        state.sortDir *= -1;
+      } else {
+        state.sortKey = key;
+        state.sortDir = th.dataset.type === 'num' ? -1 : 1;
+      }
+      document.querySelectorAll('#table thead th').forEach((el) => {
+        el.classList.remove('sorted');
+        el.querySelector('.arrow').textContent = '▲';
+      });
+      th.classList.add('sorted');
+      th.querySelector('.arrow').textContent = state.sortDir === 1 ? '▲' : '▼';
+      render();
+    });
+  });
+
+  document.querySelectorAll('#cryptoTable thead th[data-key]').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (cryptoState.sortKey === key) {
+        cryptoState.sortDir *= -1;
+      } else {
+        cryptoState.sortKey = key;
+        cryptoState.sortDir = th.dataset.type === 'num' ? -1 : 1;
+      }
+      document.querySelectorAll('#cryptoTable thead th[data-key]').forEach((el) => {
+        el.classList.remove('sorted');
+        el.querySelector('.arrow').textContent = '▲';
+      });
+      th.classList.add('sorted');
+      th.querySelector('.arrow').textContent = cryptoState.sortDir === 1 ? '▲' : '▼';
+      renderCrypto();
+    });
+  });
+
+  searchEl.addEventListener('input', (e) => {
+    state.query = e.target.value;
+    render();
+  });
+
+  signalOnlyEl.addEventListener('change', (e) => {
+    state.signalOnly = e.target.checked;
+    render();
+  });
+
+  const statTotalEl = document.getElementById('statTotal');
+  const statSectorsEl = document.getElementById('statSectors');
+  const lastUpdatedEl = document.getElementById('lastUpdated');
+
+  function formatUpdatedAt(iso) {
+    if (!iso) return null;
+    try {
+      return new Date(iso).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  async function initData() {
+    if (lastUpdatedEl) lastUpdatedEl.textContent = '데이터 불러오는 중...';
+    try {
+      const res = await fetch('./data.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+      DATA = d.stocks || [];
+      INDEX_DATA = d.indices || [];
+      ETF_DATA = d.etfs || [];
+      CRYPTO_DATA = (d.crypto || []).slice().sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+
+      if (statTotalEl) statTotalEl.textContent = DATA.length || '503';
+      if (statSectorsEl) statSectorsEl.textContent = (new Set(DATA.map((s) => s.sector)).size) || '11';
+
+      if (lastUpdatedEl) {
+        const t = d.meta ? formatUpdatedAt(d.meta.updatedAt) : null;
+        lastUpdatedEl.textContent = t ? ('마지막 갱신: ' + t + ' (KST)') : '아직 갱신 기록이 없습니다.';
+      }
+
+      renderIndexCards();
+      renderETF();
+      renderCrypto();
+      render();
+    } catch (e) {
+      if (lastUpdatedEl) lastUpdatedEl.textContent = '데이터 로딩 실패: ' + (e && e.message ? e.message : e);
+    }
+  }
+
+  initTabs();
+  buildChips();
+  document.querySelector('#table th[data-key="marketCap"]').classList.add('sorted');
+  document.querySelector('#table th[data-key="marketCap"] .arrow').textContent = '▼';
+  document.querySelector('#cryptoTable th[data-key="marketCap"]').classList.add('sorted');
+  document.querySelector('#cryptoTable th[data-key="marketCap"] .arrow').textContent = '▼';
+  initData();
+</script>
+</body>
+</html>
+
