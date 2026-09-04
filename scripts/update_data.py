@@ -313,6 +313,110 @@ def sync_constituents(stocks_by_symbol, meta_source):
     return stocks_by_symbol, note
 
 
+def fetch_kr_ranking(pages=1):
+    """Top Korean (KOSPI) stocks by market cap, scraped from Naver Finance."""
+    out = []
+    for page in range(1, pages + 1):
+        url = f"https://finance.naver.com/sise/sise_market_sum.naver?sosok=0&page={page}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            html = r.read().decode("euc-kr", errors="replace")
+        rows = re.findall(r"<tr[^>]*onMouseOver[^>]*>(.*?)</tr>", html, re.S)
+        for row in rows:
+            cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+            if len(cells) < 7:
+                continue
+            code_m = re.search(r"code=(\d{6})", cells[1])
+            if not code_m:
+                continue
+            code = code_m.group(1)
+
+            def clean(cell):
+                cell = re.sub(r"<[^>]+>", "", cell)
+                return re.sub(r"\s+", " ", cell).strip()
+
+            name = clean(cells[1])
+            if re.search(r"(우|우B|우C)$", name):
+                continue  # skip preferred-share listings, keep one row per company
+            market_cap_text = clean(cells[6]).replace(",", "")
+            try:
+                market_cap = float(market_cap_text) * 100_000_000  # 억원 -> 원
+            except ValueError:
+                market_cap = None
+            out.append({"code": code, "name": name, "marketCap": market_cap})
+    return out
+
+
+def fetch_kr_technicals(code):
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{code}.KS?range=1y&interval=1d"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    result = (d.get("chart") or {}).get("result")
+    if not result:
+        return None
+    closes_raw = result[0]["indicators"]["quote"][0]["close"]
+    closes = [c for c in closes_raw if c is not None]
+    if len(closes) < 20:
+        return None
+    rsis = wilder_rsi(closes)
+    last_rsi = rsis[-1]
+    price = closes[-1]
+    prev_close = closes[-2] if len(closes) > 1 else price
+    change_pct = round((price - prev_close) / prev_close * 100, 2) if prev_close else None
+    div = compute_divergence(closes, rsis)
+    zone = rsi_zone(last_rsi)
+    has_signal = bool(div["label"]) or zone in ("overbought", "oversold")
+    return {
+        "price": round(price, 2),
+        "changePct": change_pct,
+        "rsi": round(last_rsi, 1) if last_rsi is not None else None,
+        "rsiZone": zone,
+        "regularBearish": div["regularBearish"],
+        "regularBullish": div["regularBullish"],
+        "hiddenBearish": div["hiddenBearish"],
+        "hiddenBullish": div["hiddenBullish"],
+        "divergenceLabel": div["label"],
+        "hasSignal": has_signal,
+    }
+
+
+def update_kr_stocks(existing_kr_stocks, target_count=50):
+    log(f"Fetching KOSPI market-cap ranking from Naver Finance (top {target_count})...")
+    kr_by_code = {s["code"]: s for s in existing_kr_stocks}
+    try:
+        ranking = fetch_kr_ranking(pages=2)[:target_count]
+    except Exception as e:
+        log(f"  Naver ranking fetch failed: {e}")
+        return existing_kr_stocks, f"KR ranking fetch failed: {e}"
+
+    for i, r in enumerate(ranking):
+        code = r["code"]
+        prev = kr_by_code.get(code, {})
+        kr_by_code[code] = {
+            **prev,
+            "rank": i + 1,
+            "symbol": code,
+            "name": r["name"],
+            "marketCap": r["marketCap"],
+        }
+
+    codes = [r["code"] for r in ranking]
+    results, failed = fetch_many_with_retry(codes, fetch_kr_technicals, "KR stocks")
+    for code, tech in results.items():
+        kr_by_code[code].update(tech)
+
+    note = f"KR stocks: {len(results)}/{len(codes)} updated (KOSPI top {target_count} by market cap via Naver Finance)"
+    if failed:
+        note += f" (failed: {', '.join(failed)})"
+    log(f"  {note}")
+
+    ranked_codes = {r["code"] for r in ranking}
+    kr_list = [v for k, v in kr_by_code.items() if k in ranked_codes]
+    kr_list.sort(key=lambda s: s.get("rank", 999))
+    return kr_list, note
+
+
 def main():
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -421,19 +525,23 @@ def main():
         crypto_note = f"CoinGecko fetch failed: {e}"
     log(f"  {crypto_note}")
 
+    existing_kr_stocks = data.get("krStocks", [])
+    kr_stocks, kr_note = update_kr_stocks(existing_kr_stocks, target_count=50)
+
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     source = (
-        f"Live refresh via Massive/Polygon.io + CoinGecko at {now}. "
+        f"Live refresh via Massive/Polygon.io + CoinGecko + Naver/Yahoo Finance at {now}. "
         f"Stocks: {len(stock_results)}/{len(top100_symbols)} of top-{target_count} updated "
         f"({currently_filled} carried over, {target_count - currently_filled} newly backfilled)"
         + (f" (failed: {', '.join(stock_failed)})" if stock_failed else "") + ". "
         f"ETFs: {len(etf_results)}/{len(etf_symbols)} updated"
         + (f" (failed: {', '.join(etf_failed)})" if etf_failed else "") + ". "
-        f"{index_note}. {crypto_note}. {constituent_note}"
+        f"{index_note}. {crypto_note}. {kr_note}. {constituent_note}"
     )
 
     data["stocks"] = list(stocks_by_symbol.values())
     data["etfs"] = list(etfs_by_symbol.values())
+    data["krStocks"] = kr_stocks
     data["indices"] = list(indices_by_code.values())
     data["crypto"] = list(crypto_by_symbol.values())
     data["meta"] = {"updatedAt": now, "source": source}
