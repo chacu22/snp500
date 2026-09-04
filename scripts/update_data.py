@@ -324,13 +324,19 @@ def main():
     prev_source = (data.get("meta") or {}).get("source", "")
     stocks_by_symbol, constituent_note = sync_constituents(stocks_by_symbol, prev_source)
 
-    top100_symbols = sorted(
+    BACKFILL_STEP = 50  # how many more never-fetched stocks to add each night
+    ranked_symbols = sorted(
         [s for s in stocks_by_symbol if stocks_by_symbol[s].get("marketCap")],
         key=lambda s: stocks_by_symbol[s]["marketCap"],
         reverse=True,
-    )[:150]
+    )
+    currently_filled = sum(1 for s in ranked_symbols if stocks_by_symbol[s].get("price") is not None)
+    target_count = min(len(ranked_symbols), currently_filled + BACKFILL_STEP)
+    top100_symbols = ranked_symbols[:target_count]
+    log(f"Coverage: {currently_filled} stocks already had data; targeting {target_count} tonight "
+        f"(+{target_count - currently_filled} newly backfilled, out of {len(ranked_symbols)} total).")
 
-    stock_results, stock_failed = fetch_many_with_retry(top100_symbols, fetch_stock_technicals, "top-150 stocks")
+    stock_results, stock_failed = fetch_many_with_retry(top100_symbols, fetch_stock_technicals, f"top-{target_count} stocks")
     for sym, r in stock_results.items():
         stocks_by_symbol[sym].update(r)
 
@@ -418,7 +424,8 @@ def main():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     source = (
         f"Live refresh via Massive/Polygon.io + CoinGecko at {now}. "
-        f"Stocks: {len(stock_results)}/{len(top100_symbols)} of top-150 updated"
+        f"Stocks: {len(stock_results)}/{len(top100_symbols)} of top-{target_count} updated "
+        f"({currently_filled} carried over, {target_count - currently_filled} newly backfilled)"
         + (f" (failed: {', '.join(stock_failed)})" if stock_failed else "") + ". "
         f"ETFs: {len(etf_results)}/{len(etf_symbols)} updated"
         + (f" (failed: {', '.join(etf_failed)})" if etf_failed else "") + ". "
