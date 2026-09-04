@@ -328,9 +328,9 @@ def main():
         [s for s in stocks_by_symbol if stocks_by_symbol[s].get("marketCap")],
         key=lambda s: stocks_by_symbol[s]["marketCap"],
         reverse=True,
-    )[:100]
+    )[:150]
 
-    stock_results, stock_failed = fetch_many_with_retry(top100_symbols, fetch_stock_technicals, "top-100 stocks")
+    stock_results, stock_failed = fetch_many_with_retry(top100_symbols, fetch_stock_technicals, "top-150 stocks")
     for sym, r in stock_results.items():
         stocks_by_symbol[sym].update(r)
 
@@ -418,7 +418,7 @@ def main():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     source = (
         f"Live refresh via Massive/Polygon.io + CoinGecko at {now}. "
-        f"Stocks: {len(stock_results)}/{len(top100_symbols)} of top-100 updated"
+        f"Stocks: {len(stock_results)}/{len(top100_symbols)} of top-150 updated"
         + (f" (failed: {', '.join(stock_failed)})" if stock_failed else "") + ". "
         f"ETFs: {len(etf_results)}/{len(etf_symbols)} updated"
         + (f" (failed: {', '.join(etf_failed)})" if etf_failed else "") + ". "
