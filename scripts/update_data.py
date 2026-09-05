@@ -380,7 +380,7 @@ def fetch_yahoo_index_level(ticker, days_back=15):
 
 def update_kr_stocks(existing_kr_stocks, target_count=50):
     log(f"Fetching KOSPI market-cap ranking from Naver Finance (top {target_count})...")
-    kr_by_code = {s["code"]: s for s in existing_kr_stocks}
+    kr_by_code = {s["symbol"]: s for s in existing_kr_stocks}
     try:
         ranking = fetch_kr_ranking(pages=2)[:target_count]
     except Exception as e:
