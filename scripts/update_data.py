@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Daily market data refresh for the S&P 500 directory site.
 
-Reads data.json, refreshes it from Massive/Polygon.io + CoinGecko + Wikipedia,
-and writes data.json back in place. Run by .github/workflows/update-data.yml
-on a daily schedule; the workflow commits whatever this script writes.
+Reads data.json, refreshes it from Yahoo Finance (stock/index prices) +
+Massive/Polygon.io (ETFs) + CoinGecko + Wikipedia, and writes data.json back
+in place. Run by .github/workflows/update-data.yml on a daily schedule; the
+workflow commits whatever this script writes.
 """
 import json
 import math
@@ -135,20 +136,22 @@ def rsi_zone(rsi):
     return "neutral"
 
 
-def polygon_bars(ticker, days_back=220):
-    end = date.today()
-    start = end - timedelta(days=days_back)
-    url = (f"{BASE}/v2/aggs/ticker/{ticker}/range/1/day/{start.isoformat()}/{end.isoformat()}"
-           f"?adjusted=true&sort=asc&limit=300&apiKey={API_KEY}")
-    d = http_get_json(url)
-    return d.get("results", [])
-
-
-def fetch_stock_technicals(symbol):
-    bars = polygon_bars(symbol)
-    if len(bars) < 20:
+def yahoo_daily_closes(ticker, range_="1y"):
+    encoded = urllib.parse.quote(ticker, safe="")
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}?range={range_}&interval=1d"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    result = (d.get("chart") or {}).get("result")
+    if not result:
         return None
-    closes = [b["c"] for b in bars]
+    closes_raw = result[0]["indicators"]["quote"][0]["close"]
+    return [c for c in closes_raw if c is not None]
+
+
+def technicals_from_closes(closes):
+    if len(closes) < 20:
+        return None
     rsis = wilder_rsi(closes)
     last_rsi = rsis[-1]
     price = closes[-1]
@@ -169,6 +172,13 @@ def fetch_stock_technicals(symbol):
         "divergenceLabel": div["label"],
         "hasSignal": has_signal,
     }
+
+
+def fetch_stock_technicals(symbol):
+    closes = yahoo_daily_closes(symbol.replace(".", "-"))
+    if closes is None:
+        return None
+    return technicals_from_closes(closes)
 
 
 def fetch_simple_change(ticker):
@@ -349,52 +359,16 @@ def fetch_kr_ranking(pages=1):
 
 
 def fetch_kr_technicals(code):
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{code}.KS?range=1y&interval=1d"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        d = json.loads(r.read().decode("utf-8"))
-    result = (d.get("chart") or {}).get("result")
-    if not result:
+    closes = yahoo_daily_closes(f"{code}.KS")
+    if closes is None:
         return None
-    closes_raw = result[0]["indicators"]["quote"][0]["close"]
-    closes = [c for c in closes_raw if c is not None]
-    if len(closes) < 20:
-        return None
-    rsis = wilder_rsi(closes)
-    last_rsi = rsis[-1]
-    price = closes[-1]
-    prev_close = closes[-2] if len(closes) > 1 else price
-    change_pct = round((price - prev_close) / prev_close * 100, 2) if prev_close else None
-    div = compute_divergence(closes, rsis)
-    zone = rsi_zone(last_rsi)
-    has_signal = bool(div["label"]) or zone in ("overbought", "oversold")
-    return {
-        "price": round(price, 2),
-        "changePct": change_pct,
-        "rsi": round(last_rsi, 1) if last_rsi is not None else None,
-        "rsiZone": zone,
-        "regularBearish": div["regularBearish"],
-        "regularBullish": div["regularBullish"],
-        "hiddenBearish": div["hiddenBearish"],
-        "hiddenBullish": div["hiddenBullish"],
-        "divergenceLabel": div["label"],
-        "hasSignal": has_signal,
-    }
+    return technicals_from_closes(closes)
 
 
 def fetch_yahoo_index_level(ticker, days_back=15):
     """Level/change/changePct for an index via Yahoo Finance (e.g. '^KS11', '^KQ11')."""
-    encoded = urllib.parse.quote(ticker, safe="")
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}?range={days_back}d&interval=1d"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        d = json.loads(r.read().decode("utf-8"))
-    result = (d.get("chart") or {}).get("result")
-    if not result:
-        return None
-    closes_raw = result[0]["indicators"]["quote"][0]["close"]
-    closes = [c for c in closes_raw if c is not None]
-    if len(closes) < 2:
+    closes = yahoo_daily_closes(ticker, range_=f"{days_back}d")
+    if closes is None or len(closes) < 2:
         return None
     last, prev = closes[-1], closes[-2]
     return {
@@ -567,7 +541,7 @@ def main():
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     source = (
-        f"Live refresh via Massive/Polygon.io + CoinGecko + Naver/Yahoo Finance at {now}. "
+        f"Live refresh via Yahoo Finance + Massive/Polygon.io (ETFs) + CoinGecko + Naver Finance at {now}. "
         f"Stocks: {len(stock_results)}/{len(top100_symbols)} of top-{target_count} updated "
         f"({currently_filled} carried over, {target_count - currently_filled} newly backfilled)"
         + (f" (failed: {', '.join(stock_failed)})" if stock_failed else "") + ". "
